@@ -31,3 +31,20 @@ Follow these steps to get started:
         > re-stop
 
 
+Services:
+
+1. Get: http://localhost:8080/getwnl
+       the service returns email subject and content in json format
+       {
+         "subject": "test subject",
+         "content": "test content"
+       }
+
+
+2. Post: http://localhost:8080/postwnl
+        the service takes data in json format
+        {
+          "subject": "test subject",
+          "content": "test content"
+        }
+
