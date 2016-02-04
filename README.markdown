@@ -48,3 +48,7 @@ Services:
           "content": "test content"
         }
 
+3. Post: http://localhost:8080/testwnl
+        the service takes data in json format
+        {"jobseekerId":"11111111"}
+

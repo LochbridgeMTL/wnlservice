@@ -16,7 +16,8 @@ libraryDependencies ++= {
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
     "org.specs2"          %%  "specs2-core"   % "2.3.11" % "test",
-    "io.spray"            %%   "spray-json"    % "1.3.2"
+    "io.spray"            %%   "spray-json"    % "1.3.2",
+    "com.rabbitmq"        %    "amqp-client"  % "2.8.1"
   )
 }
 

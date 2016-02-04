@@ -9,6 +9,9 @@ import MediaTypes._
 
 import java.io._
 
+import com.rabbitmq.client.Connection
+import com.typesafe.config.Config
+
 
 
 // we don't implement our route structure directly in the service actor because
@@ -29,9 +32,9 @@ class MyServiceActor extends Actor with MyService {
 // this trait defines our service behavior independently from the service actor
 trait MyService extends HttpService {
   import EmailDataJsonProtocol._
+  import MQMessageJsonProtocol._
   import spray.httpx.SprayJsonSupport._
   import spray.json._
-//  import scala.tools.nsc.io._
 
   val myRoute =
     path("") {
@@ -74,7 +77,19 @@ trait MyService extends HttpService {
           }
         }
       }
+    } ~
+    path("testwnl" ) {
+      post {
+        entity(as[String]) { mqMessageString =>
+          var statusCode = sendMsg(mqMessageString)
+          statusCode match {
+            case 0 => complete("Failed")
+            case 1 => complete("Success")
+          }
+        }
+      }
     }
+
 
   private def writeToFile(filePath: String, contentToWrite: String): Int = {
     var writer: PrintWriter = null
@@ -90,5 +105,22 @@ trait MyService extends HttpService {
     }
 
     return returnCode;
+  }
+
+  private def sendMsg(msgToBeSent: String): Int = {
+    var returnCode: Int = 0
+    var connection: Connection = null
+    try {
+      connection = RabbitMQConnection.getConnection()
+      val channel = connection.createChannel();
+      channel.basicPublish("", Config.RABBITMQ_QUEUE, null, msgToBeSent.getBytes());
+      returnCode = 1
+    } catch {
+      case e: Exception => returnCode = 0
+    } finally {
+
+    }
+
+    return returnCode
   }
 }
