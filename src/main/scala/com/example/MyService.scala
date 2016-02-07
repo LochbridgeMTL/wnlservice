@@ -12,6 +12,12 @@ import java.io._
 import com.rabbitmq.client.Connection
 import com.typesafe.config.Config
 
+import java.io.IOException;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 
 // we don't implement our route structure directly in the service actor because
@@ -71,7 +77,14 @@ trait MyService extends HttpService {
           var statusCode = writeToFile(getClass.getResource("/wnl/template.sub").getPath, emailData.subject)
           statusCode = writeToFile(getClass.getResource("/wnl/wnl_content.csv").getPath, emailData.content)
           statusCode match {
-            case 200 => complete(StatusCodes.Created)
+            case 200 => {
+              var copyStatusCode = copyFilesToTopology(getClass.getResource("/wnl/template.sub").getPath, Config.TOPOLOGY_ROOT + "/src/main/resources/template.sub")
+              copyStatusCode = copyFilesToTopology(getClass.getResource("/wnl/wnl_content.csv").getPath, Config.TOPOLOGY_ROOT + "/src/main/resources/wnl_content.csv")
+              copyStatusCode match {
+                case 0 =>  complete(StatusCodes.NotModified)
+                case 1 =>  complete(StatusCodes.Created)
+              }
+            }
             case 304 => complete(StatusCodes.NotModified)
             case 404 => complete(StatusCodes.NotFound)
           }
@@ -122,5 +135,20 @@ trait MyService extends HttpService {
     }
 
     return returnCode
+  }
+
+  private def copyFilesToTopology(from: String, to: String): Int = {
+    var statusCode = 0
+    try {
+      var fromPath: Path = Paths.get(from);
+      var toPath: Path = Paths.get(to);
+
+      Files.copy(fromPath, toPath, StandardCopyOption.REPLACE_EXISTING);
+      statusCode = 1
+    } catch {
+      case e: Exception => statusCode = 0
+    }
+
+    return statusCode
   }
 }
