@@ -43,7 +43,6 @@ trait MyService extends HttpService with CORSSupport {
   import spray.json._
 
   val myRoute =
-  cors{
     path("") {
       get {
         respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
@@ -72,9 +71,10 @@ trait MyService extends HttpService with CORSSupport {
         }
       }
     } ~
-    path("postwnl" ) {
-      post {
-        respondWithMediaType(`application/json`) {
+    cors {
+      path("postwnl") {
+        post {
+          respondWithMediaType(`application/json`) {
             entity(as[EmailData]) { emailData =>
               var statusCode = writeToFile(getClass.getResource("/wnl/template.sub").getPath, emailData.subject)
               statusCode = writeToFile(getClass.getResource("/wnl/wnl_content.csv").getPath, emailData.content)
@@ -91,6 +91,7 @@ trait MyService extends HttpService with CORSSupport {
                 case 404 => complete(StatusCodes.NotFound)
               }
             }
+          }
         }
       }
     } ~
@@ -105,7 +106,6 @@ trait MyService extends HttpService with CORSSupport {
         }
       }
     }
-  }
 
 
   private def writeToFile(filePath: String, contentToWrite: String): Int = {
