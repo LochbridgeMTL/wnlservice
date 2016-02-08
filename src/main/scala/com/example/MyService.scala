@@ -36,13 +36,14 @@ class MyServiceActor extends Actor with MyService {
 
 
 // this trait defines our service behavior independently from the service actor
-trait MyService extends HttpService {
+trait MyService extends HttpService with CORSSupport {
   import EmailDataJsonProtocol._
   import MQMessageJsonProtocol._
   import spray.httpx.SprayJsonSupport._
   import spray.json._
 
   val myRoute =
+  cors{
     path("") {
       get {
         respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
@@ -73,21 +74,23 @@ trait MyService extends HttpService {
     } ~
     path("postwnl" ) {
       post {
-        entity(as[EmailData]) { emailData =>
-          var statusCode = writeToFile(getClass.getResource("/wnl/template.sub").getPath, emailData.subject)
-          statusCode = writeToFile(getClass.getResource("/wnl/wnl_content.csv").getPath, emailData.content)
-          statusCode match {
-            case 200 => {
-              var copyStatusCode = copyFilesToTopology(getClass.getResource("/wnl/template.sub").getPath, Config.TOPOLOGY_ROOT + "/src/main/resources/template.sub")
-              copyStatusCode = copyFilesToTopology(getClass.getResource("/wnl/wnl_content.csv").getPath, Config.TOPOLOGY_ROOT + "/src/main/resources/wnl_content.csv")
-              copyStatusCode match {
-                case 0 =>  complete(StatusCodes.NotModified)
-                case 1 =>  complete(StatusCodes.Created)
+        respondWithMediaType(`application/json`) {
+            entity(as[EmailData]) { emailData =>
+              var statusCode = writeToFile(getClass.getResource("/wnl/template.sub").getPath, emailData.subject)
+              statusCode = writeToFile(getClass.getResource("/wnl/wnl_content.csv").getPath, emailData.content)
+              statusCode match {
+                case 200 => {
+                  var copyStatusCode = copyFilesToTopology(getClass.getResource("/wnl/template.sub").getPath, Config.TOPOLOGY_ROOT + "/src/main/resources/template.sub")
+                  copyStatusCode = copyFilesToTopology(getClass.getResource("/wnl/wnl_content.csv").getPath, Config.TOPOLOGY_ROOT + "/src/main/resources/wnl_content.csv")
+                  copyStatusCode match {
+                    case 0 => complete(StatusCodes.NotModified)
+                    case 1 => complete(StatusCodes.Created)
+                  }
+                }
+                case 304 => complete(StatusCodes.NotModified)
+                case 404 => complete(StatusCodes.NotFound)
               }
             }
-            case 304 => complete(StatusCodes.NotModified)
-            case 404 => complete(StatusCodes.NotFound)
-          }
         }
       }
     } ~
@@ -102,6 +105,7 @@ trait MyService extends HttpService {
         }
       }
     }
+  }
 
 
   private def writeToFile(filePath: String, contentToWrite: String): Int = {
