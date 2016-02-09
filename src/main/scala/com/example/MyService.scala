@@ -95,13 +95,15 @@ trait MyService extends HttpService with CORSSupport {
         }
       }
     } ~
-    path("testwnl" ) {
-      post {
-        entity(as[String]) { mqMessageString =>
-          var statusCode = sendMsg(mqMessageString)
-          statusCode match {
-            case 0 => complete("Failed")
-            case 1 => complete("Success")
+    cors {
+      path("testwnl") {
+        post {
+          entity(as[String]) { mqMessageString =>
+            var statusCode = sendMsg(mqMessageString)
+            statusCode match {
+              case 0 => complete("Failed")
+              case 1 => complete("Success")
+            }
           }
         }
       }
